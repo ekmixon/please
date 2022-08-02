@@ -7,10 +7,9 @@ from importlib import import_module
 def list_classes(suite):
     for test in suite:
         if isinstance(test, unittest.suite.TestSuite):
-            for cls, name in list_classes(test):
-                yield cls, name
+            yield from list_classes(test)
         else:
-            yield test, test.__class__.__module__ + '.' + test.id()
+            yield (test, f'{test.__class__.__module__}.{test.id()}')
 
 
 def get_suite(test_names, raise_on_empty=False):
@@ -24,11 +23,7 @@ def get_suite(test_names, raise_on_empty=False):
     """
     suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromModule(module)
                                for module in import_tests())
-    # Filter to test name only, this ensures the extra flags does not get swallowed
-    test_names = list(filter(lambda x: not x.startswith('-'), test_names))
-
-    # filter results if test_names is not empty
-    if test_names:
+    if test_names := list(filter(lambda x: not x.startswith('-'), test_names)):
         new_suite = unittest.suite.TestSuite()
         for name in test_names:
             new_suite.addTests(cls for cls, class_name in list_classes(suite)

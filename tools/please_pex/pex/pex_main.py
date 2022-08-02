@@ -75,9 +75,7 @@ except:
                                             "python%d.%d" % sys.version_info[:2],
                                             "site-packages"))
             else:
-                sitepackages.append(prefix)
-                sitepackages.append(os.path.join(prefix, "lib", "site-packages"))
-
+                sitepackages.extend((prefix, os.path.join(prefix, "lib", "site-packages")))
         return sitepackages
 
 # Put this pex on the path before anything else.
@@ -161,10 +159,14 @@ class SoImport(object):
 
     def splitext(self, path):
         """Similar to os.path.splitext, but splits our longest known suffix preferentially."""
-        for suffix in self.suffixes_by_length:
-            if path.endswith(suffix):
-                return path[:-len(suffix)], suffix
-        return None, None
+        return next(
+            (
+                (path[: -len(suffix)], suffix)
+                for suffix in self.suffixes_by_length
+                if path.endswith(suffix)
+            ),
+            (None, None),
+        )
 
 
 class ModuleDirImport(object):
@@ -250,15 +252,14 @@ class ModuleDirImport(object):
 
 
 def pex_basepath(temp=False):
-    if temp:
-        import tempfile
-        return tempfile.mkdtemp(dir=os.environ.get('TEMP_DIR'), prefix='pex_')
-    else:
+    if not temp:
         return os.environ.get('PEX_CACHE_DIR',os.path.expanduser('~/.cache/pex'))
+    import tempfile
+    return tempfile.mkdtemp(dir=os.environ.get('TEMP_DIR'), prefix='pex_')
 
 
 def pex_uniquedir():
-    return 'pex-%s' % PEX_STAMP
+    return f'pex-{PEX_STAMP}'
 
 
 def pex_paths():
@@ -283,7 +284,7 @@ def explode_zip():
     @contextlib.contextmanager
     def pex_lockfile(basepath, uniquedir):
         # Acquire the lockfile.
-        lockfile_path = os.path.join(basepath, '.lock-%s' % uniquedir)
+        lockfile_path = os.path.join(basepath, f'.lock-{uniquedir}')
         lockfile = open(lockfile_path, "a+")
         # Block until we can acquire the lockfile.
         portalocker.lock(lockfile, portalocker.LOCK_EX)
@@ -344,11 +345,10 @@ def profile(filename):
 
 def interact(main):
     """If PEX_INTERPRETER is set, then starts an interactive console, otherwise runs main()."""
-    if os.environ.get('PEX_INTERPRETER', '0') != '0':
-        import code
-        code.interact()
-    else:
+    if os.environ.get('PEX_INTERPRETER', '0') == '0':
         return main()
+    import code
+    code.interact()
 
 
 def main():

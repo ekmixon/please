@@ -69,7 +69,7 @@ def main(argv):
     progress = lambda desc, it: Bar(desc).iter(it) if FLAGS.progress else it
     if os.path.exists(FLAGS.root):
         shutil.rmtree(FLAGS.root)
-    for i in progress('Generating files', range(FLAGS.size)):
+    for _ in progress('Generating files', range(FLAGS.size)):
         depth = random.randint(1, 1 + int(log10(FLAGS.size)))
         dir = '/'.join([FLAGS.root] + [random.choice(DIRNAMES) for _ in range(depth)])
         if dir in pkgset:
@@ -79,13 +79,18 @@ def main(argv):
         filename = os.path.join(dir, 'BUILD')
         with open(filename, 'w') as f:
             lang = random.choice(LANGUAGES)
-            f.write(LANGUAGE_TEMPLATE.format(
-                name = base,
-                lang = lang,
-                ext = LANGUAGE_EXTENSIONS[lang],
-                deps = choose_deps(packages),
-                test_deps = [':' + base] + choose_deps(packages) + TEST_DEPS[lang],
-            ))
+            f.write(
+                LANGUAGE_TEMPLATE.format(
+                    name=base,
+                    lang=lang,
+                    ext=LANGUAGE_EXTENSIONS[lang],
+                    deps=choose_deps(packages),
+                    test_deps=[f':{base}']
+                    + choose_deps(packages)
+                    + TEST_DEPS[lang],
+                )
+            )
+
         packages.append(dir)
         pkgset.add(dir)
         filenames.append(filename)

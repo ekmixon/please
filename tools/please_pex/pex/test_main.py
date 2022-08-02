@@ -30,28 +30,27 @@ def initialise_coverage():
 
 def main():
     """Runs the tests. Returns an appropriate exit code."""
-    args = [arg for arg in sys.argv[1:]]
+    args = list(sys.argv[1:])
     # Add .bootstrap dir to path, after the initial pex entry
     sys.path = sys.path[:1] + [os.path.join(sys.path[0], '.bootstrap')] + sys.path[1:]
-    if os.getenv('COVERAGE'):
-        # It's important that we run coverage while we load the tests otherwise
-        # we get no coverage for import statements etc.
-        cov = initialise_coverage().coverage(data_file=None)
-        cov.exclude(r'^import\b')
-        cov.exclude(r'^from\b')
-        cov.start()
-        result = run_tests(args)
-        cov.stop()
-        omissions = ['*/third_party/*', '*/.bootstrap/*', '*/test_main.py']
+    if not os.getenv('COVERAGE'):
+        return run_tests(args)
+    # It's important that we run coverage while we load the tests otherwise
+    # we get no coverage for import statements etc.
+    cov = initialise_coverage().coverage(data_file=None)
+    cov.exclude(r'^import\b')
+    cov.exclude(r'^from\b')
+    cov.start()
+    result = run_tests(args)
+    cov.stop()
+    omissions = ['*/third_party/*', '*/.bootstrap/*', '*/test_main.py']
         # Exclude test code from coverage itself.
-        omissions.extend('*/%s.py' % module.replace('.', '/') for module in args)
-        import coverage
-        try:
-            cov.xml_report(outfile=os.getenv('COVERAGE_FILE'), omit=omissions, ignore_errors=True)
-        except coverage.CoverageException as err:
+    omissions.extend(f"*/{module.replace('.', '/')}.py" for module in args)
+    import coverage
+    try:
+        cov.xml_report(outfile=os.getenv('COVERAGE_FILE'), omit=omissions, ignore_errors=True)
+    except coverage.CoverageException as err:
             # This isn't fatal; the main time we've seen it is raised for "No data to report" which
             # isn't an exception as far as we're concerned.
-            sys.stderr.write('Failed to calculate coverage: %s' % err)
-        return result
-    else:
-        return run_tests(args)
+        sys.stderr.write(f'Failed to calculate coverage: {err}')
+    return result

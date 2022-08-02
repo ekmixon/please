@@ -8,5 +8,8 @@ def run_tests(args):
     mod = importlib.import_module(mod_name)
     f = getattr(mod, name)
     if not callable(f):
-        raise TypeError('Specified test runner %s is not callable, should be a function taking two arguments' % runner)
+        raise TypeError(
+            f'Specified test runner {runner} is not callable, should be a function taking two arguments'
+        )
+
     return f(TEST_NAMES, args)
