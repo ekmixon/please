@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:18.04
 MAINTAINER peter.ebden@gmail.com
 
 RUN apt-get update && apt-get install -y nginx-extras && apt-get clean
