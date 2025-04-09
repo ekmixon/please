@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:20.04
 MAINTAINER peter.ebden@gmail.com
 
 # A few miscellaneous dependencies.
